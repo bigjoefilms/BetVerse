@@ -11,7 +11,7 @@ const payer = Keypair.generate();
 
 
 /// Helius exposes Solana and compression RPC endpoints through a single URL
-const RPC_ENDPOINT = "https://api.devnet.solana.com";
+const RPC_ENDPOINT = "https://mainnet.helius-rpc.com/?api-key=c7e5b412-c980-4f46-8b06-2c85c0b4a08d";
 const COMPRESSION_ENDPOINT = RPC_ENDPOINT;
 const PROVER_ENDPOINT = RPC_ENDPOINT;
 const connection: Rpc = createRpc(RPC_ENDPOINT, COMPRESSION_ENDPOINT, PROVER_ENDPOINT)

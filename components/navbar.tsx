@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Bell, Menu, X, WalletIcon } from "lucide-react";
+import { Bell, Menu, X, WalletIcon, Coins } from "lucide-react";
 import NotificationPanel from "./notification-panel";
 import WalletConnect from "./wallet-connect";
 import WalletBalanceDisplay from "./wallet-balance-display";
@@ -25,7 +25,7 @@ import { Sparkles } from "lucide-react";
 import Image from "next/image";
 
 export default function Navbar() {
-  const { isConnected, publicKey } = useWallet();
+  const { isConnected, publicKey, requestAirdrop, isHydrated } = useWallet();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -54,6 +54,8 @@ export default function Navbar() {
 
   // Add this effect to handle wallet connection
   useEffect(() => {
+    if (!isHydrated) return; // Don't sync until hydrated
+    
     const syncUserWithWallet = async () => {
       if (isConnected && publicKey) {
         try {
@@ -80,7 +82,7 @@ export default function Navbar() {
     };
 
     syncUserWithWallet();
-  }, [isConnected, publicKey]);
+  }, [isConnected, publicKey, isHydrated]);
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -256,7 +258,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-3">
             <ThemeToggle />
 
-            {isConnected ? (
+            {isHydrated && isConnected ? (
               <>
                 <div className="flex items-center space-x-3">
                   <div className="relative">
@@ -273,6 +275,17 @@ export default function Navbar() {
                   </div>
 
                   <WalletBalanceDisplay />
+
+                  {/* Airdrop button for testing */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={requestAirdrop}
+                    className="flex items-center space-x-1"
+                  >
+                    <Coins className="h-4 w-4" />
+                    <span className="hidden sm:inline">Airdrop</span>
+                  </Button>
 
                   <Link href="/profile">
                     <Avatar className="h-9 w-9 cursor-pointer hover:opacity-90 transition-opacity">
@@ -298,7 +311,7 @@ export default function Navbar() {
           <div className="md:hidden flex items-center space-x-2">
             <ThemeToggle />
 
-            {isConnected && (
+            {isHydrated && isConnected && (
               <div className="relative">
                 <Button
                   variant="ghost"

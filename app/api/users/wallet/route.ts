@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { isMongoConfigured } from '@/lib/mongodb';
 
 export async function POST(request: Request) {
     try {
@@ -8,6 +9,27 @@ export async function POST(request: Request) {
 
         if (!walletAddress) {
             return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
+        }
+
+        // Check if MongoDB is configured
+        if (!isMongoConfigured()) {
+            // Return a mock response for demo purposes
+            return NextResponse.json({
+                message: 'User logged in (demo mode)',
+                user: {
+                    walletAddress,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    isVerified: true,
+                    isActive: true,
+                    role: 'USER',
+                    balance: 1000,
+                    totalWinnings: 500,
+                    totalBets: 25,
+                    totalDeposits: 1500,
+                    totalWithdrawals: 0
+                }
+            });
         }
 
         const client = await clientPromise;

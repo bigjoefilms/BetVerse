@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client only if API key is available
+let openai: OpenAI | null = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 // Define the system message for the sports betting assistant
 const SYSTEM_MESSAGE = `You are an expert sports betting analyst and advisor with deep knowledge of cricket, football, basketball, and other sports. Your role is to help users make informed betting decisions based on comprehensive analysis.
@@ -64,6 +67,25 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if OpenAI is available
+    if (!openai) {
+      return NextResponse.json({
+        content: `I'm currently in demo mode and can't provide real-time betting analysis. Here's what I would typically analyze for your query about "${body.userMessage}":
+
+**Demo Response:**
+- Team performance trends
+- Historical head-to-head data
+- Player statistics and form
+- Venue and weather conditions
+- Market odds movement
+
+To get real AI-powered betting insights, please configure the OPENAI_API_KEY environment variable.
+
+**Disclaimer:** This is a demo response. Always do your own research and bet responsibly.`,
+        error: 'OpenAI API not configured'
+      } as AIAssistantResponse);
+    }
+
     // Prepare the messages array for the API call
     const messages = [
       { role: 'system' as const, content: SYSTEM_MESSAGE },
@@ -111,7 +133,7 @@ export async function POST(request: Request) {
     
     return NextResponse.json(
       { 
-        content: '', 
+        content: 'I apologize, but I\'m experiencing technical difficulties. Please try again later or contact support if the issue persists.',
         error: 'Failed to process your request. Please try again later.' 
       } as AIAssistantResponse,
       { status: 500 }

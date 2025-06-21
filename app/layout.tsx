@@ -1,51 +1,82 @@
-'use client';
-
-import React, { useMemo } from 'react';
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { WalletProvider } from "@/components/wallet-provider"
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
-
-require('@solana/wallet-adapter-react-ui/styles.css');
+import ClientWalletProvider from "@/components/client-wallet-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
+export const metadata: Metadata = {
+  title: "Under_score - Decentralized Sports Betting",
+  description: "The first decentralized fantasy sports betting platform with automated market making. Bet on your favorite teams with USDC and SOL.",
+  keywords: ["sports betting", "decentralized", "solana", "blockchain", "cricket", "football", "basketball"],
+  authors: [{ name: "Under_score Team" }],
+  creator: "Under_score",
+  publisher: "Under_score",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://underscore.bet"),
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://underscore.bet",
+    title: "Under_score - Decentralized Sports Betting",
+    description: "The first decentralized fantasy sports betting platform with automated market making.",
+    siteName: "Under_score",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Under_score - Decentralized Sports Betting",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Under_score - Decentralized Sports Betting",
+    description: "The first decentralized fantasy sports betting platform with automated market making.",
+    images: ["/og-image.png"],
+    creator: "@underscore_bet",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: "your-google-verification-code",
+  },
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const network = WalletAdapterNetwork.Devnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-  const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
-
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
-          enableSystem={false}
+          enableSystem
           disableTransitionOnChange
         >
-          <ConnectionProvider endpoint={endpoint}>
-            <SolanaWalletProvider wallets={wallets} autoConnect>
-              <WalletModalProvider>
-                <WalletProvider>
-                  {children}
-                  <Toaster />
-                </WalletProvider>
-              </WalletModalProvider>
-            </SolanaWalletProvider>
-          </ConnectionProvider>
+          <ClientWalletProvider>
+            {children}
+            <Toaster />
+          </ClientWalletProvider>
         </ThemeProvider>
       </body>
     </html>

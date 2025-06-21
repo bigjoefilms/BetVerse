@@ -2,11 +2,8 @@ import { MongoClient } from 'mongodb'
 import dotenv from 'dotenv';
 dotenv.config();
 
-if (!process.env.MONGODB_URI) {
-    throw new Error('Invalid/Missing environment variable: "MONGODB_URI"')
-}
-
-const uri = process.env.MONGODB_URI
+// Use a fallback URI if MONGODB_URI is not provided
+const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/betverse-demo'
 const options = {}
 
 let client
@@ -33,3 +30,8 @@ if (process.env.NODE_ENV === 'development') {
 // Export a module-scoped MongoClient promise. By doing this in a
 // separate module, the client can be shared across functions.
 export default clientPromise
+
+// Helper function to check if MongoDB is properly configured
+export const isMongoConfigured = () => {
+    return !!process.env.MONGODB_URI;
+}

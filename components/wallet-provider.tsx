@@ -1,18 +1,11 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import {
-  ConnectionProvider,
-  WalletProvider as SolanaWalletProvider,
-  useWallet as useSolanaWallet,
-} from "@solana/wallet-adapter-react"
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui"
-import { getSolanaEndpoint, useSolanaWallets } from "@/lib/solana-wallet"
-import { LAMPORTS_PER_SOL, Connection } from "@solana/web3.js"
+import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react"
+import { LAMPORTS_PER_SOL, Connection, PublicKey } from "@solana/web3.js"
 import { useToast } from "@/components/ui/use-toast"
-
-// Import wallet adapter CSS
-import "@solana/wallet-adapter-react-ui/styles.css"
+import { BettingClient } from "@/lib/betting-client"
+import { getSolanaEndpoint } from "@/lib/solana-wallet"
 
 interface WalletContextType {
   isConnected: boolean
@@ -24,6 +17,9 @@ interface WalletContextType {
   connect: () => Promise<void>
   disconnect: () => Promise<void>
   placeBet: (amount: number, matchId: string, selection: string, odds: number) => Promise<boolean>
+  bettingClient: BettingClient | null
+  requestAirdrop: () => Promise<void>
+  isHydrated: boolean
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -37,11 +33,39 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
     usdc: "0.00",
     sol: "0.00",
   })
+  const [bettingClient, setBettingClient] = useState<BettingClient | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
   const { toast } = useToast()
+
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  // Initialize betting client when wallet connects and is ready
+  useEffect(() => {
+    if (
+      connected &&
+      wallet &&
+      wallet.adapter &&
+      typeof wallet.adapter === 'object' &&
+      publicKey
+    ) {
+      try {
+        const client = new BettingClient(wallet.adapter)
+        setBettingClient(client)
+      } catch (e) {
+        console.error('Failed to initialize BettingClient:', e)
+        setBettingClient(null)
+      }
+    } else {
+      setBettingClient(null)
+    }
+  }, [connected, wallet, publicKey])
 
   // Fetch SOL balance
   useEffect(() => {
-    if (!publicKey) return
+    if (!publicKey || !isHydrated) return
 
     const fetchSolBalance = async () => {
       try {
@@ -78,7 +102,7 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
     }, 30000) // Refresh every 30 seconds
 
     return () => clearInterval(intervalId)
-  }, [publicKey])
+  }, [publicKey, isHydrated])
 
   // Connect wallet - this is handled by the Solana wallet adapter
   const connect = async () => {
@@ -116,6 +140,7 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
         usdc: "0.00",
         sol: "0.00",
       })
+      setBettingClient(null)
       toast({
         title: "Wallet Disconnected",
         description: "Your wallet has been disconnected.",
@@ -130,9 +155,49 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Place a bet
+  // Request airdrop for testing
+  const requestAirdrop = async () => {
+    if (!bettingClient) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet first.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      toast({
+        title: "Requesting Airdrop",
+        description: "Requesting 1 SOL airdrop...",
+      })
+
+      const signature = await bettingClient.requestAirdrop(1)
+      
+      toast({
+        title: "Airdrop Successful",
+        description: `Received 1 SOL. Transaction: ${signature.slice(0, 8)}...`,
+      })
+
+      // Refresh balance
+      const newBalance = await bettingClient.getBalance()
+      setBalance((prev) => ({
+        ...prev,
+        sol: newBalance.toFixed(4),
+      }))
+    } catch (error) {
+      console.error("Error requesting airdrop:", error)
+      toast({
+        title: "Airdrop Failed",
+        description: "Failed to request airdrop. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Place a bet using the Solana program
   const placeBet = async (amount: number, matchId: string, selection: string, odds: number): Promise<boolean> => {
-    if (!publicKey) {
+    if (!publicKey || !bettingClient) {
       toast({
         title: "Wallet Required",
         description: "Please connect your wallet to place a bet.",
@@ -141,21 +206,49 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
       return false
     }
 
-    // In a real app, you would create and send a transaction to a smart contract
-    // For this demo, we'll simulate a successful bet
     try {
-      // Simulate transaction delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Convert selection to team number
+      let team: number;
+      switch (selection) {
+        case 'team1':
+          team = 0;
+          break;
+        case 'team2':
+          team = 1;
+          break;
+        case 'draw':
+          team = 2;
+          break;
+        default:
+          throw new Error('Invalid selection');
+      }
 
       toast({
-        title: "Bet Placed",
-        description: `You've successfully placed a bet of $${amount} on ${selection} for match #${matchId}`,
+        title: "Placing Bet",
+        description: `Placing bet of ${amount} SOL on ${selection}...`,
       })
 
-      // Update balance (simulated)
+      // Convert amount to lamports
+      const amountInLamports = amount * LAMPORTS_PER_SOL;
+      
+      // Place bet using the Solana program
+      const signature = await bettingClient.placeBet(
+        matchId,
+        amountInLamports,
+        team,
+        Math.floor(odds * 1000) // Convert odds to integer (e.g., 1.95 -> 1950)
+      )
+
+      toast({
+        title: "Bet Placed Successfully",
+        description: `Bet placed! Transaction: ${signature.slice(0, 8)}...`,
+      })
+
+      // Update balance
+      const newBalance = await bettingClient.getBalance()
       setBalance((prev) => ({
         ...prev,
-        usdc: (Number.parseFloat(prev.usdc.replace(/,/g, "")) - amount).toFixed(2),
+        sol: newBalance.toFixed(4),
       }))
 
       return true
@@ -163,7 +256,7 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
       console.error("Error placing bet:", error)
       toast({
         title: "Bet Failed",
-        description: "Failed to place bet. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to place bet. Please try again.",
         variant: "destructive",
       })
       return false
@@ -179,6 +272,9 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
         connect,
         disconnect,
         placeBet,
+        bettingClient,
+        requestAirdrop,
+        isHydrated,
       }}
     >
       {children}
@@ -187,17 +283,7 @@ function WalletContextProvider({ children }: { children: ReactNode }) {
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const wallets = useSolanaWallets()
-
-  return (
-    <ConnectionProvider endpoint={getSolanaEndpoint()}>
-      <SolanaWalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          <WalletContextProvider>{children}</WalletContextProvider>
-        </WalletModalProvider>
-      </SolanaWalletProvider>
-    </ConnectionProvider>
-  )
+  return <WalletContextProvider>{children}</WalletContextProvider>
 }
 
 export function useWallet() {

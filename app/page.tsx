@@ -1,3 +1,6 @@
+"use client"
+import { useState } from "react";
+
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -64,6 +67,26 @@ const leaderboardData = [
 ];
 
 export default function Home() {
+  const [isPlacingBet, setIsPlacingBet] = useState(false);
+
+  const handlePlaceBet = async (
+    matchId: string,
+    amount: number,
+    odds: number,
+    team: "team1" | "team2" | "draw"
+  ) => {
+    setIsPlacingBet(true);
+    try {
+      // Placeholder for bet placement logic
+      console.log(`Placing bet: ${amount} on ${team} with odds ${odds} for match ${matchId}`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    } catch (error) {
+      console.error("Error placing bet:", error);
+    } finally {
+      setIsPlacingBet(false);
+    }
+  };
+
   return (
     <AnimatedBackground variant="dots" className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -499,6 +522,9 @@ export default function Home() {
                     team1Score="142/3 (15.2)"
                     team2Score="Target: 186"
                     venue="Wankhede Stadium"
+                    participants={156}
+                    onPlaceBet={handlePlaceBet}
+                    isPlacingBet={isPlacingBet}
                   />
 
                   <BettingCard
@@ -518,6 +544,9 @@ export default function Home() {
                     team1Score="95/2 (10.3)"
                     team2Score="Target: 175"
                     venue="M. Chinnaswamy Stadium"
+                    participants={89}
+                    onPlaceBet={handlePlaceBet}
+                    isPlacingBet={isPlacingBet}
                   />
                 </TabsContent>
 
@@ -540,6 +569,9 @@ export default function Home() {
                     team2Score="2"
                     venue="Old Trafford"
                     tournament="Premier League"
+                    participants={234}
+                    onPlaceBet={handlePlaceBet}
+                    isPlacingBet={isPlacingBet}
                   />
                 </TabsContent>
 
@@ -562,6 +594,9 @@ export default function Home() {
                     team2Score="92"
                     venue="Staples Center"
                     tournament="NBA"
+                    participants={167}
+                    onPlaceBet={handlePlaceBet}
+                    isPlacingBet={isPlacingBet}
                   />
                 </TabsContent>
               </Tabs>
@@ -784,7 +819,21 @@ export default function Home() {
 }
 
 // Leaderboard Row Component
-function LeaderboardRow({ rank, username, avatar, winRate, profit, bets }) {
+function LeaderboardRow({ 
+  rank, 
+  username, 
+  avatar, 
+  winRate, 
+  profit, 
+  bets 
+}: {
+  rank: number;
+  username: string;
+  avatar: string;
+  winRate: number;
+  profit: number;
+  bets: number;
+}) {
   return (
     <tr className="border-b border-border hover:bg-accent/10 transition-colors">
       <td className="p-4">

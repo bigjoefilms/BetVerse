@@ -8,10 +8,11 @@ import { Copy, ExternalLink, Wallet } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function WalletBalanceDisplay() {
-  const { isConnected, publicKey, balance, disconnect } = useWallet()
+  const { isConnected, publicKey, balance, disconnect, isHydrated } = useWallet()
   const { toast } = useToast()
 
-  if (!isConnected || !publicKey) {
+  // Don't render until hydrated to prevent SSR/client mismatch
+  if (!isHydrated || !isConnected || !publicKey) {
     return null
   }
 

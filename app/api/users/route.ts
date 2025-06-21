@@ -2,8 +2,13 @@ import clientPromise from '@/lib/mongodb'
 import { User, Bet, Transaction, KYC, Notification } from '@/lib/models/user'
 import { ObjectId } from 'mongodb'
 import { NextResponse } from 'next/server'
+import { isMongoConfigured } from '@/lib/mongodb'
 
 export async function createUser(userData: Omit<User, '_id'>) {
+    if (!isMongoConfigured()) {
+        throw new Error('MongoDB not configured');
+    }
+    
     const client = await clientPromise
     const db = client.db()
 
@@ -25,6 +30,10 @@ export async function createUser(userData: Omit<User, '_id'>) {
 }
 
 export async function getUserById(id: string) {
+    if (!isMongoConfigured()) {
+        throw new Error('MongoDB not configured');
+    }
+    
     const client = await clientPromise
     const db = client.db()
 
@@ -32,6 +41,10 @@ export async function getUserById(id: string) {
 }
 
 export async function createBet(betData: Omit<Bet, '_id'>) {
+    if (!isMongoConfigured()) {
+        throw new Error('MongoDB not configured');
+    }
+    
     const client = await clientPromise
     const db = client.db()
 
@@ -44,6 +57,10 @@ export async function createBet(betData: Omit<Bet, '_id'>) {
 }
 
 export async function createTransaction(transactionData: Omit<Transaction, '_id'>) {
+    if (!isMongoConfigured()) {
+        throw new Error('MongoDB not configured');
+    }
+    
     const client = await clientPromise
     const db = client.db()
 
@@ -62,6 +79,27 @@ export async function POST(request: Request) {
 
         if (!walletAddress) {
             return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
+        }
+
+        // Check if MongoDB is configured
+        if (!isMongoConfigured()) {
+            // Return a mock response for demo purposes
+            return NextResponse.json({
+                message: 'User logged in (demo mode)',
+                user: {
+                    walletAddress,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    isVerified: true,
+                    isActive: true,
+                    role: 'USER',
+                    balance: 1000,
+                    totalWinnings: 500,
+                    totalBets: 25,
+                    totalDeposits: 1500,
+                    totalWithdrawals: 0
+                }
+            });
         }
 
         const client = await clientPromise;
